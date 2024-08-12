@@ -66,4 +66,25 @@ If you need to reproduce the performance of a single dataset, you will need to f
 - Test on New Dataset for Cross-dataset Evaluation: `bash ./scripts/xd_test_cde.sh dataset seed gpu`
 
 ## Results
+### Base-to-New Generalization
+The table presents the performance of DAM on 11 recognition datasets under the base-to-new generalization setting. The best results are highlighted in bold. This demonstrates that our dual alignment mechanism excels not only in same-modal feature alignment but also in effectively handling cross-modal feature alignment, thus enhancing the model's generalization capability on new classes.
+| Name                                       |   Base Accuracy   |   New Accuracy    |   Harmonic Mean   |
+| ------------------------------------------ | :---------------: | :---------------: | :---------------: |
+| [CLIP](https://arxiv.org/abs/2103.00020)   |       69.34       |       74.22       |       71.70       |
+| [CoOp](https://arxiv.org/abs/2109.01134)   |       82.69       |       63.22       |       71.66       |
+| [CoCoOp](https://arxiv.org/abs/2203.05557) |       80.47       |       71.69       |       75.83       |
+| [MaPLe](https://arxiv.org/abs/2210.03117)  |       82.28       |       75.14       |       78.55       |
+| [HPT](https://arxiv.org/abs/2312.06323)    |       84.32       |       76.86       |       80.23       |
+| [CAM](https://github.com/Peiy-Lu/DAM-main/)    |     **84.49**     |     **78.27**     |     **81.26**     |
 
+### Cross-Dataset Evaluation
+The table summarizes the comparison of DAM with existing methods.
+![cross dataset](images/cross_dataset.png)
+
+### Domain Generalization
+The comparison with existing methods is summarized in the table.
+<img src="images/domain_generation.png" alt="domain_generation" style="width: 80%;">
+
+### Zreo-shot CMA
+As shown in the table, our method improved the average performance across these eleven datasets by 0.51\% compared to CLIP.
+![domain generalization](images/zreo-shot_CMA.png)
