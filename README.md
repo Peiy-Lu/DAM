@@ -1,6 +1,6 @@
 # Fine-Tuning via Linked Domains: A Closed-Form Dual Alignment Mechanism for Transferring Vision-Language Models
 ## Approach
-![main figure](images/main_figure.png)
+![main figure](images/mainFigure.png)
 > **<p align="justify"> Abstract:** *Adapters and prompt learning methods have become common strategies to fine-tune pre-trained vision-language models, mitigating the high computational cost of fine-tuning the entire model for downstream tasks. However, these strategies primarily focus on aligning the predictions from the fine-tuned model with those from the pre-trained model within a single modality, \textcolor{red}{neglecting the interaction between different modalities}. \textcolor{blue}{However, these strategies primarily focus on aligning the fine-tuned model's predictions with those of the pre-trained model within a single modality or on unidirectional cross-modal alignment, while overlooking the interactions between different modalities.} To address this issue, we propose a closed-form dual alignment mechanism (DAM) that {\it not only ensures the consistency in predictions within a single modality but also achieves the alignment of features across different modalities}. In DAM, all alignments are achieved by ridge regression with closed-form solutions, significantly reducing the computational burden. Experimental results demonstrate that DAM outperforms the state-of-the-art methods on 11 benchmarks over various evaluation metrics.* </p>
 
 ## Contributions
