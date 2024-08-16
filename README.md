@@ -74,11 +74,11 @@ The table presents the performance of DAM on 11 recognition datasets under the b
 | [CoCoOp](https://arxiv.org/abs/2203.05557) |       80.47       |       71.69       |       75.83       |
 | [MaPLe](https://arxiv.org/abs/2210.03117)  |       82.28       |       75.14       |       78.55       |
 | [HPT](https://arxiv.org/abs/2312.06323)    |       84.32       |       76.86       |       80.23       |
-| [CAM](https://github.com/Peiy-Lu/DAM-main/)    |     **84.49**     |     **78.27**     |     **81.26**     |
+| [CAM](https://github.com/Peiy-Lu/DAM-main/)    |     **84.53**     |     **78.12**     |     **81.20**     |
 
 ### Cross-Dataset Evaluation
 The table summarizes the comparison of DAM with existing methods.
-![cross dataset](images/cross_dataset.png)
+![cross dataset](images/cross_datasets.png)
 
 ### Domain Generalization
 The comparison with existing methods is summarized in the table.
@@ -86,4 +86,4 @@ The comparison with existing methods is summarized in the table.
 
 ### Zreo-shot CMA
 As shown in the table, our method improved the average performance across these eleven datasets by 0.51\% compared to CLIP.
-![domain generalization](images/zreo-shot_CMA.png)
+![domain generalization](images/CMA_plug-in.png)
