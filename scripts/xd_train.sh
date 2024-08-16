@@ -1,3 +1,4 @@
+# bash ./scripts/xd_train.sh
 TRAINER=DAM
 CFG=xd
 SHOTS=16
@@ -5,11 +6,12 @@ GPU=$1
 
 S_DATASET=imagenet
 OUTPUT_DIR=./results
-DATA=/your_data_path
+DATA=your_path_to_dataset
 DIRGPT=./gpt_data
 
-for SEED in 1 2 3
+for SEED in 1
 do
+
     DIR=${OUTPUT_DIR}/output_img/${S_DATASET}/${TRAINER}/${CFG}_shots_${SHOTS}/seed${SEED}
     if [ -d "$DIR" ]; then
         echo "Oops! The results exist at ${DIR} (so skip this job)"

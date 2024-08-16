@@ -1,8 +1,9 @@
+# bash ./scripts/b2n_train.sh caltech101
 TRAINER=DAM
 CFG=b2n
 
 OUTPUT_DIR=./results
-DATA=/your_data_path
+DATA=your_path_to_dataset
 DIRGPT=./gpt_data
 
 DATASET=$1
@@ -27,3 +28,4 @@ else
     DATASET.NUM_SHOTS ${SHOTS} \
     DATASET.SUBSAMPLE_CLASSES base
 fi
+

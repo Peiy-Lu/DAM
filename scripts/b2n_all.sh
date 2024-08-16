@@ -1,6 +1,7 @@
 export CUDA_LAUNCH_BLOCKING=1
-
 gpu=0
+
+LOADEP=15
 
 for dataset in imagenet caltech101 oxford_pets stanford_cars oxford_flowers food101 fgvc_aircraft sun397 dtd eurosat ucf101
 do

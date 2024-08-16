@@ -1,7 +1,6 @@
 GPU=0
-
 bash scripts/xd_train.sh ${GPU}
-
+seed=$1
 for dataset in imagenetv2 imagenet_sketch imagenet_a imagenet_r
 do
     for seed in 1 2 3

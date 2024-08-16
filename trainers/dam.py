@@ -13,7 +13,7 @@ from dassl.utils import load_pretrained_weights, load_checkpoint
 from dassl.optim import build_optimizer, build_lr_scheduler
 
 from clip import clip
-
+import torch.utils.checkpoint as checkpoint
 
 def load_clip_to_cpu(cfg):
     backbone_name = cfg.MODEL.BACKBONE.NAME
@@ -392,14 +392,15 @@ class TopoPromptLearner(nn.Module):
                                self.e2a_scal * torch.stack(self.attns_e2a[classname]).cuda()
         return attns
 
-
 class CrossModalAlignment(nn.Module):
     # img_f: B, K, 512
     # text_f: N, K, 512
-    # K: number of prompts, in our method, K=1.
-    # When self.cfg.XD is True (indicating cross-dataset or domain generalization tasks), 
-    # in order to prevent significant computational overhead, 
-    # we reduce the computational cost by transforming Equation 6.
+    # K=1.
+    # When self.cfg.XD is True (indicating cross-dataset or domain generalization tasks).
+    # To address the computational burden caused by utilizing all categories in 
+    # cross-dataset and domain generalization tasks, 
+    # we have segmented the computation of W_T into "number_class // chunk_size" parts. 
+    # This partitioning allows for individual calculations, thereby reducing computational costs.
     
     def __init__(self, cfg):
         super().__init__()
@@ -409,65 +410,104 @@ class CrossModalAlignment(nn.Module):
         self.logits_scales = nn.Parameter(torch.FloatTensor([0.5]))
         self.cfg = cfg
         
-    def get_rc_dist_ItoT(self, img_f, text_f, alpha, beta):
+    def get_rc_dist_ItoT(self, img_f, text_f, alpha, beta, chunk_size):
         B, K, N, d = img_f.shape[0], img_f.shape[1], text_f.shape[0], text_f.shape[-1]
 
-        I = img_f.float() # (B, K, 512)
-        T = text_f.contiguous().view(-1, d).float() # (NK, 512)
+        I = img_f.float()   # (B, K, 512)
+        T = text_f.float()  # (N, K, 512)
 
         reg = I.shape[0] / I.shape[2]
         lam = reg * alpha.exp() + 1e-6
         rho = beta.exp().float()
        
-        It = I.permute(0, 2, 1) # (B, 512, K)
-        
-        if self.cfg.XD:
-            IIt = I.matmul(It) # (B, K, K)
-            M_inv = (IIt + torch.eye(IIt.size(-1)).to(IIt.device).unsqueeze(0).mul(lam)).inverse() # (B, K, K)
-            W = T.matmul(It).matmul(M_inv)
-        else:
-            ItI = It.matmul(I) # (B, 512, 512)
-            M_inv = (ItI + torch.eye(ItI.size(-1)).to(ItI.device).unsqueeze(0).mul(lam)).inverse() # (B, 512, 512)
-            W = T.matmul(M_inv).matmul(It)
+        It = I.permute(0, 2, 1)     # (B, 512, K)
 
-        T_bar = W.matmul(I).mul(rho) # (B, NK, 512)
-        dist = (T_bar - T.unsqueeze(0)).pow(2).sum(dim=-1).neg().view(B, N, K).mean(dim=-1) # (B, N)
+        ItI = It.matmul(I)      # (B, 512, 512)
+        M_inv = (ItI + torch.eye(ItI.size(-1)).to(ItI.device).unsqueeze(0).mul(lam)).inverse()      # (B, 512, 512)
+        A = M_inv.matmul(It) 
+
+        if self.cfg.XD:
+            dist = torch.zeros((B, N)).to(I.device)
+            for i in range(0, N, chunk_size):
+                with torch.no_grad():
+                    T_chunk = T[i:i+chunk_size]  # (chunk_size, K, 512)
+                    T_expanded = T_chunk.unsqueeze(0)  # (1, chunk_size, K, 512)
+                    W_chunk = A.unsqueeze(1).matmul(T_expanded)  # (B, chunk_size, 512, 512)
+
+                    T_bar_chunk = I.unsqueeze(1).matmul(W_chunk).mul(rho)  # (B, chunk_size, 1, 512)
+                    dist_chunk = (T_bar_chunk - T_chunk.unsqueeze(0)).pow(2).sum(dim=-1).neg().view(B, T_bar_chunk.size(1), K).mean(dim=-1)  # (B, chunk_size)
+
+                    dist[:, i:i+chunk_size] = dist_chunk
+        else:
+            A_expanded = A.unsqueeze(1)     # (B, 1, c, 1)
+            T_expanded = T.unsqueeze(0)     # (1, N, 1, c)
+            
+            W = A_expanded.matmul(T_expanded) # (B, N, c, c)
+
+            T_bar = I.unsqueeze(1).matmul(W).mul(rho) # (B, N, 1, 512)
+            dist = (T_bar - T.unsqueeze(0)).pow(2).sum(dim=-1).neg().view(B, N, K).mean(dim=-1) # (B, N)
         
         return dist
     
-    def get_rc_dist_TtoI(self, img_f, text_f, alpha, beta):
+    def get_rc_dist_TtoI(self, img_f, text_f, alpha, beta, chunk_size):
         B, K, N, d = img_f.shape[0], img_f.shape[1], text_f.shape[0], img_f.shape[-1]
 
-        I = img_f.contiguous().view(-1, d).float() # (BK, 512)
-        T = text_f.float() # (N, K, 512)
+        I = img_f.float() # (B, 1, 512)
+        T = text_f.float() # (N, 1, 512)
 
         reg = T.shape[0] / T.shape[2]
         lam = reg * alpha.exp() + 1e-6
         rho = beta.exp().float()
-       
-        Tt = T.permute(0, 2, 1) # (N, 512, K)
 
         if self.cfg.XD:
-            TTt = T.matmul(Tt) # (N, K, K)
-            M_inv = (TTt + torch.eye(TTt.size(-1)).to(TTt.device).unsqueeze(0).mul(lam)).inverse() # (N, K, K)
-            W = I.matmul(Tt).matmul(M_inv)
-        else:
+            dist = torch.zeros((N, B)).to(I.device)
+            for i in range(0, N, chunk_size):
+                with torch.no_grad():
+                    T_chunk = T[i:i+chunk_size]  # (chunk_size, 1, 512)
+                    Tt = T_chunk.permute(0, 2, 1) # (chunk_size, 512, 1)
+                    TtT = Tt.matmul(T_chunk) # (chunk_size, 512, 512)
+
+                M_inv = (TtT + torch.eye(TtT.size(-1)).to(TtT.device).unsqueeze(0).mul(lam)).inverse() # (chunk_size, 512, 512)
+                
+                with torch.no_grad():
+                    A = M_inv.matmul(Tt)
+
+                    A_expanded = A.unsqueeze(1)     # (chunk_size, 1, c, 1)
+                    I_expanded = I.unsqueeze(0)     # (1, B, 1, c)
+
+                    W = A_expanded.matmul(I_expanded) # (chunk_size, B, c, c)
+
+                I_bar = T_chunk.unsqueeze(1).matmul(W).mul(rho) # (chunk_size, B, 1, 512)
+                dist_chunk = (I_bar - I.unsqueeze(0)).pow(2).sum(dim=-1).neg().view(I_bar.size(0), B, K).mean(dim=-1).t() # (B, chunk_size)
+                dist[i:i+chunk_size] = dist_chunk.t() # (chunk_size, B)
+
+            dist = dist.t() # (B, N)
+        
+        else: 
+            Tt = T.permute(0, 2, 1) # (N, 512, 1)
+
             TtT = Tt.matmul(T) # (N, 512, 512)
             M_inv = (TtT + torch.eye(TtT.size(-1)).to(TtT.device).unsqueeze(0).mul(lam)).inverse() # (N, 512, 512)
-            W = I.matmul(M_inv).matmul(Tt)
+            A = M_inv.matmul(Tt)
 
-        I_bar = W.matmul(T).mul(rho) # (N, BK, 512)
-        dist = (I_bar - I.unsqueeze(0)).pow(2).sum(dim=-1).neg().view(N, B, K).mean(dim=-1).t()
+            A_expanded = A.unsqueeze(1)     # (N, 1, c, 1)
+            I_expanded = I.unsqueeze(0)     # (1, B, 1, c)
+
+            W = A_expanded.matmul(I_expanded) # (N, B, c, c)
+
+            I_bar = T.unsqueeze(1).matmul(W).mul(rho) # (B, N, 1, 512)
+            dist = (I_bar - I.unsqueeze(0)).pow(2).sum(dim=-1).neg().view(N, B, K).mean(dim=-1).t()
 
         return dist
     
     def forward(self, img_f, text_f):
         alpha_ItoT, alpha_TtoI = self.r[0], self.r[2]
         beta_ItoT, beta_TtoI = self.r[1], self.r[3]  
-
-        rc_dist_ItoT = self.get_rc_dist_ItoT(img_f, text_f, alpha_ItoT, beta_ItoT)
-        rc_dist_TtoI = self.get_rc_dist_TtoI(img_f, text_f, alpha_TtoI, beta_TtoI)
         alp = self.alp
+        chunk_size = 100
+
+        rc_dist_ItoT = self.get_rc_dist_ItoT(img_f, text_f, alpha_ItoT, beta_ItoT, chunk_size)
+        rc_dist_TtoI = self.get_rc_dist_TtoI(img_f, text_f, alpha_TtoI, beta_TtoI, chunk_size)
         rc_dist = alp * rc_dist_ItoT + (1 - alp) * rc_dist_TtoI
 
         logits = rc_dist*self.scale
@@ -507,7 +547,6 @@ class text_xd_SameModalAlignment(nn.Module):
 
         return W
     
-    
 class SameModalAlignment(nn.Module):
     # For each frozen and prompted image or text pair, 
     # we use SMA to generate a C×C weight to align the prompted features to the frozen features.
@@ -530,6 +569,7 @@ class SameModalAlignment(nn.Module):
 
         return W
     
+
     def forward(self, source, target):
         B = source.shape[0]
         alpha = self.alpha
@@ -629,6 +669,8 @@ class CustomCLIP(nn.Module):
         image_features = image_features / image_features.norm(dim=-1, keepdim=True) # B D
         text_features = text_features / text_features.norm(dim=-1, keepdim=True)    # N D
         
+        # Unlike the approach outlined in the paper, we transpose the features for text and image, 
+        # as described in the paper. We substitute the paper's $f$ with $f^T$, which is equivalent.
         img_weight = self.img_sma(image_features.unsqueeze(1), image_features_zs.unsqueeze(1))
         x_a = image_features.unsqueeze(1).float().matmul(img_weight).squeeze(1)
 
@@ -720,19 +762,9 @@ class DAM(TrainerX):
 
         self.scaler = GradScaler() if cfg.TRAINER.DAM.PREC == "amp" else None
 
-        # device_count = torch.cuda.device_count()
-        # if device_count > 1:
-        #     print(f"Multiple GPUs detected (n_gpus={device_count}), use all of them!")
-        #     self.model = nn.DataParallel(self.model)
-
     def forward_backward(self, batch):
         image1, image2, label = self.parse_batch_train(batch)
 
-        # logits, logits_i, logits_t = self.model(image)
-        # loss = F.cross_entropy(logits, label)
-        # loss_i = F.cross_entropy(logits_i, label)
-        # loss_t = F.cross_entropy(logits_t, label)
-        # loss = loss + loss_i + loss_t
         logits, loss = self.model(image1, image2, label)
 
         self.model_backward_and_update(loss)
@@ -746,13 +778,6 @@ class DAM(TrainerX):
             self.update_lr()
 
         return loss_summary
-
-    # def parse_batch_train(self, batch):
-    #     input = batch["img"]
-    #     label = batch["label"]
-    #     input = input.to(self.device)
-    #     label = label.to(self.device)
-    #     return input, label
 
     def parse_batch_train(self, batch):
         input = batch["img"]

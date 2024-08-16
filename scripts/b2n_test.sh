@@ -1,8 +1,11 @@
+# bash ./scripts/b2n_test.sh caltech101
 TRAINER=DAM
 CFG=b2n
+# SHOTS=16
+# GPU=0
 
 OUTPUT_DIR=./results
-DATA=/your_data_path
+DATA=your_path_to_dataset
 DIRGPT=./gpt_data
 
 DATASET=$1
@@ -10,6 +13,7 @@ SEED=$2
 SHOTS=$3
 GPU=$4
 LOADEP=$5
+
 
 COMMON_DIR=${DATASET}/${TRAINER}/shots_${SHOTS}/seed${SEED}
 DIRTRAIN=${OUTPUT_DIR}/output/B2N/train_base/${COMMON_DIR}

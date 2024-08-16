@@ -3,6 +3,9 @@ def get_dataset_specified_config(dataset):
     cfg = {
         "ImageNet": {
             "TRAINER.W": 9.0,
+            "DATALOADER.TRAIN_X.BATCH_SIZE": 4,
+            "DATALOADER.TEST.BATCH_SIZE": 16,
+            "OPTIM.MAX_EPOCH": 10,
         },
         "Caltech101": {
             "TRAINER.W": 8.0,
@@ -11,8 +14,8 @@ def get_dataset_specified_config(dataset):
         "OxfordPets": {
             "TRAINER.W": 7.0,   
         },
-        "StanfordCars": {
-            "TRAINER.W": 4.0,
+        "StanfordCars": {   
+            "TRAINER.W": 6.0,
             "TRAINER.I_M": 0.2,
             "TRAINER.T_M": 0.2,
         },
@@ -36,13 +39,13 @@ def get_dataset_specified_config(dataset):
             "TRAINER.W": 6.0,
         },
         "DescribableTextures": {
-            "TRAINER.W": 16.0,
+            "TRAINER.W": 8.0,
             "TRAINER.I_M": 0.2,
             "TRAINER.T_M": 0.2,
             "INPUT.TRANSFORMS": ["randaugment", "normalize"],
         },
         "EuroSAT": {
-            "TRAINER.W": 8.0,
+            "TRAINER.W": 7.0,
             "TRAINER.I_M": 0.4,
             "TRAINER.T_M": 0.4,
             "TRAINER.DAM.N_TPRO": 4,
