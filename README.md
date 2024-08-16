@@ -31,7 +31,7 @@ pip install -r requirements.txt
 python setup.py develop
 cd ..
 
-git clone https://github.com/Peiy-Lu/DAM-main.git
+git clone https://github.com/Peiy-Lu/DAM.git
 
 cd DAM-main/
 
@@ -77,13 +77,14 @@ The table presents the performance of DAM on 11 recognition datasets under the b
 | [CAM](https://github.com/Peiy-Lu/DAM-main/)    |     **84.53**     |     **78.12**     |     **81.20**     |
 
 ### Cross-Dataset Evaluation
-The table summarizes the comparison of DAM with existing methods.
+Performance of DAM on cross-dataset evaluation, i.e. the models are trained on ImageNet and evaluated on other
+10 datasets with potentially different distribution.
 ![cross dataset](images/cross_datasets.png)
 
 ### Domain Generalization
-The comparison with existing methods is summarized in the table.
+The comparison performances on domain generalization with existing methods are summarized in the table.
 <img src="images/domain_generation.png" alt="domain_generation" style="width: 80%;">
 
-### Zreo-shot CMA
+### Plug-in Performance of CMA
 As shown in the table, our method improved the average performance across these eleven datasets by 0.51\% compared to CLIP.
-![domain generalization](images/CMA_plug-in.png)
+![Plug-in Performance of CMA](images/CMA_plug-in.png)
