@@ -74,7 +74,7 @@ The table presents the performance of DAM on 11 recognition datasets under the b
 | [CoCoOp](https://arxiv.org/abs/2203.05557) |       80.47       |       71.69       |       75.83       |
 | [MaPLe](https://arxiv.org/abs/2210.03117)  |       82.28       |       75.14       |       78.55       |
 | [HPT](https://arxiv.org/abs/2312.06323)    |       84.32       |       76.86       |       80.23       |
-| [CAM](https://github.com/Peiy-Lu/DAM-main/)    |     **84.53**     |     **78.12**     |     **81.20**     |
+| [DAM](https://github.com/Peiy-Lu/DAM-main/)    |     **84.53**     |     **78.12**     |     **81.20**     |
 
 ### Cross-Dataset Evaluation
 Performance of DAM on cross-dataset evaluation, i.e. the models are trained on ImageNet and evaluated on other
