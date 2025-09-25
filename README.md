@@ -1,4 +1,4 @@
-# Fine-Tuning via Linked Domains: A Closed-Form Dual Alignment Mechanism for Transferring Vision-Language Models
+# [Fine-Tuning via Linked Domains: A Closed-Form Dual Alignment Mechanism for Transferring Vision-Language Models](https://ieeexplore.ieee.org/document/11177536)
 ## Approach
 ![main figure](images/mainfigure.png)
 > **<p align="justify"> Abstract:** *Adapters and prompt learning have become two de facto strategies to fine-tune pre-trained vision-language models, mitigating the high computational cost of fine-tuning an entire model for downstream tasks. They can align the prediction from the fine-tuned model with that from the pre-trained model. However, the existing methods of these strategies primarily focus on aligning within a single modality, and the exploration of bidirectional interactions between modalities remains limited. To address this issue, we propose a closed-form dual alignment mechanism (DAM) that not only ensures the consistency in predictions within a single modality but also achieves the alignment of features across different modalities. In DAM, all alignments are achieved by closed-form solutions to ridge regression, without inducing a massive number of learnable parameters. Experimental results demonstrate that DAM outperforms the state-of-the-art methods on 11 benchmarks over various evaluation metrics.* </p>
@@ -53,16 +53,16 @@ For convenience, we have included all three seeds for each dataset in a single s
 bash ./scripts/b2n_all.sh
 ```
 If you need to reproduce results for a single dataset, seed, or shot, you can simply run the script as follows:
-- Train and Test on Base Classes: `bash scripts/b2n_train.sh dataset seed shot gpu`
-- Test on New Classes：`bash scripts/b2n_test.sh dataset seed shot gpu`
+- Train and Test on Base Classes: `bash scripts/b2n_train.sh your_dataset your_seed your_shot your_gpu`
+- Test on New Classes：`bash scripts/b2n_test.sh your_dataset your_seed your_shot your_gpu`
 
 ### Domain Generalization & Cross-dataset Evaluation
 Similarly, we provide a script named `./scripts/xd_all.sh` for Domain Generalization and Cross-dataset Evaluation, which enables the training and testing of all datasets with three seeds in a single run.
 
 If you need to reproduce the performance of a single dataset, you will need to follow the steps below to run the script:
 - Training on ImageNet: `bash ./scripts/xd_train.sh gpu`
-- Test on New Dataset for Domain Generalization: `bash ./scripts/xd_test_dg.sh dataset seed gpu`
-- Test on New Dataset for Cross-dataset Evaluation: `bash ./scripts/xd_test_cde.sh dataset seed gpu`
+- Test on New Dataset for Domain Generalization: `bash ./scripts/xd_test_dg.sh your_dataset your_seed your_gpu`
+- Test on New Dataset for Cross-dataset Evaluation: `bash ./scripts/xd_test_cde.sh your_dataset your_seed your_gpu`
 
 ## Results
 ### Base-to-New Generalization
@@ -73,7 +73,7 @@ The table presents the performance of DAM on 11 recognition datasets under the b
 | [CoOp](https://arxiv.org/abs/2109.01134)   |       82.69       |       63.22       |       71.66       |
 | [CoCoOp](https://arxiv.org/abs/2203.05557) |       80.47       |       71.69       |       75.83       |
 | [MaPLe](https://arxiv.org/abs/2210.03117)  |       82.28       |       75.14       |       78.55       |
-| [HPT](https://arxiv.org/abs/2312.06323)    |       84.32       |       76.86       |       80.23       |
+| [HPT](https://arxiv.org/abs/2312.06323)    |       84.32       |       76.86       |       80.42       |
 | [DAM](https://github.com/Peiy-Lu/DAM-main/)    |     **84.53**     |     **78.12**     |     **81.20**     |
 
 ### Cross-Dataset Evaluation
